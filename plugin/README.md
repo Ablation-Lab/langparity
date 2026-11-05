@@ -1,6 +1,6 @@
 # Langparity
 
-Langparity checks a translation against its source before you ship it. A local script lines up the source and the translation, string by string or section by section, and reports what's mechanically broken: missing and extra parts, renamed or dropped placeholders, broken ICU plurals, unclosed tags and formatting, changed links and numbers, and text left untranslated. Then Claude reads every pair for what a script can't see: meaning drift, dropped clauses, the wrong tone or form of address, and inconsistent terms. Each problem Claude confirms comes with a corrected translation.
+Langparity checks translations of your app or docs against their source; it doesn't translate for you. A local script compares each translated file with its source (JSON, Flutter ARB, gettext .po, Java .properties, Apple .strings, Android strings.xml, XLIFF, and Markdown or plain text) and flags missing or added text, broken placeholders and formatting, changed numbers, and text left untranslated. Claude then reads each pair for meaning and tone, such as a formal or informal "you", and suggests a corrected translation for each problem it confirms.
 
 It adds one skill, `langparity` (in Claude Code: `/langparity:langparity`). It's an independent project, not made or endorsed by Anthropic.
 

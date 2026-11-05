@@ -1,6 +1,6 @@
 # Langparity
 
-Langparity is a Claude Code plugin that checks a translation against its source before you ship it: a local script reports missing and extra parts, broken placeholders, ICU plurals, tags, links and formatting, changed numbers and untranslated text, then Claude reads every pair for meaning drift and tone and suggests a corrected translation for each problem it confirms. The plugin lives in [plugin/](plugin/); its README, [plugin/README.md](plugin/README.md), describes what it checks, what it reads and writes, and how to try it.
+Langparity is a Claude Code plugin that checks translations of your app or docs against their source; it doesn't translate for you. A local script compares each translated file with its source (JSON, Flutter ARB, gettext .po, Java .properties, Apple .strings, Android strings.xml, XLIFF, and Markdown or plain text) and flags missing or added text, broken placeholders and formatting, changed numbers, and text left untranslated. Claude then reads each pair for meaning and tone, such as a formal or informal "you", and suggests a corrected translation for each problem it confirms. The plugin lives in [plugin/](plugin/); its README, [plugin/README.md](plugin/README.md), describes what it checks, what it reads and writes, and how to try it.
 
 ## Install
 
