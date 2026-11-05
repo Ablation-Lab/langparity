@@ -29,7 +29,7 @@ test('placeholders in the common formats', () => {
 
 test('ICU plurals and selects', () => {
   const src = '{count, plural, one {# message} other {# messages}}';
-  assert.deepEqual(icuArgs(src).map(a => [a.name, a.kind, a.branches]), [['count', 'plural', ['one', 'other']]]);
+  assert.deepEqual(icuArgs(src).map(a => [a.name, a.kind, a.branches.map(b => b.key)]), [['count', 'plural', ['one', 'other']]]);
   assert.ok(checks(checkPair(src, '{count, plural, one {# message}}')).includes('FAIL icu'));
   assert.ok(!checks(checkPair(src, '{count, plural, one {# wiadomość} few {# wiadomości} many {# wiadomości} other {# wiadomości}}')).some(c => c.startsWith('FAIL')), 'Polish plural categories are fine');
   assert.ok(checks(checkPair('{g, select, male {He} female {She} other {They}}', '{g, select, male {Il} other {Iel}}')).includes('FAIL icu'));
@@ -104,7 +104,7 @@ test('the samples give the expected mechanical findings', () => {
   const app = run({ ...parseArgs([path.join(SAMPLES, 'app/en.json'), path.join(SAMPLES, 'app/fr.json'), '--glossary', path.join(SAMPLES, 'glossary.txt'), '--target-lang', 'fr']), out: tmp() });
   assert.deepEqual(app.counts, { FAIL: 5, WARN: 7, NOTE: 1 });
   const rep = fs.readFileSync(app.report, 'utf8');
-  for (const s of ['`logout`', '`legacy.banner`', '`{nom}`', 'no "other" branch', '`</b>`', '`50`', 'Save changes', '"Settings" should be translated as "Paramètres"', '`support@example.com`']) assert.ok(rep.includes(s), s);
+  for (const s of ['`logout`', '`legacy.banner`', '`{nom}`', 'no "other" branch', '`</b>`', '`50`', 'Save changes', 'glossary term not translated as required (term, then required translation): `Settings` `Paramètres`', '`support@example.com`']) assert.ok(rep.includes(s), s);
   const doc = run({ ...parseArgs([path.join(SAMPLES, 'docs/guide.en.md'), path.join(SAMPLES, 'docs/guide.de.md')]), out: tmp() });
   assert.deepEqual(doc.counts, { FAIL: 2, WARN: 6, NOTE: 0 });
   const po = run({ ...parseArgs([path.join(SAMPLES, 'po/de.po')]), out: tmp() });
@@ -135,7 +135,7 @@ test('hidden characters added by the translation are flagged', () => {
   const d = tmp();
   const r = run({ ...parseArgs([write(d, 'en.json', '{"k":"Hello there"}'), write(d, 'fr.json', JSON.stringify({ k: `Bonjour${zw} là` }))]), out: path.join(d, 'o') });
   const p = JSON.parse(fs.readFileSync(r.pairsFile, 'utf8').trim());
-  assert.ok(p.findings.some(f => f.check === 'hidden characters' && /U\+200B/.test(f.detail)));
+  assert.ok(p.findings.some(f => f.check === 'hidden characters' && f.values.includes('U+200B')));
 });
 
 test('errors: wrong arguments, formats and encodings', () => {

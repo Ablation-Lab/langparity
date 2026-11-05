@@ -25,7 +25,7 @@ Mechanical checks: 2 FAIL, 6 WARN.
 
 - The last paragraph (never share your API key) is missing: script (FAIL).
 - `**5 Minuten.` has an unclosed bold marker: script (FAIL).
-- Version 2.4 became 2.5, and the releases link points to a different page: script (WARN for each).
+- Version 2.4 became 2.5, and the releases link points to a different page: script (two WARN each: the old value missing, the new one added).
 - The code block and the inline code `tool check` were translated: script (WARN, twice).
 
 ## po/de.po

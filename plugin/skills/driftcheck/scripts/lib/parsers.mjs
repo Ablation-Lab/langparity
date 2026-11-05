@@ -43,29 +43,34 @@ function poString(lines) {
 }
 export function parsePo(text) {
   const units = [];
-  let cur = null, field = null, buf = [], flags = '';
+  let cur = null, field = null, buf = [], flags = '', nplurals = null;
   const flush = () => { if (field && cur) cur[field] = poString(buf); field = null; buf = []; };
+  const hasMsgstr = () => !!cur && (Object.keys(cur).some(k => k.startsWith('msgstr')) || String(field).startsWith('msgstr'));
   const end = () => {
     flush();
+    if (cur && cur.msgid === '' && typeof cur.msgstr === 'string') { const m = cur.msgstr.match(/nplurals\s*=\s*(\d+)/); if (m) nplurals = Number(m[1]); }
     if (cur && cur.msgid !== undefined && cur.msgid !== '') {
       const ctx = cur.msgctxt ? `${cur.msgctxt}|` : '';
       if (cur.msgid_plural !== undefined) {
-        const forms = Object.keys(cur).filter(k => /^msgstr\[\d+\]$/.test(k)).sort();
-        forms.forEach((k, i) => units.push({ key: `${ctx}${cur.msgid}[${i}]`, source: i === 0 ? cur.msgid : cur.msgid_plural, target: cur[k], meta: { fuzzy: cur.fuzzy, plural: true } }));
+        const forms = Object.keys(cur).filter(k => /^msgstr\[\d+\]$/.test(k)).sort((a, b) => Number(a.slice(7, -1)) - Number(b.slice(7, -1)));
+        // With one plural form (Japanese, Chinese...) form 0 translates the plural message.
+        forms.forEach((k, i) => units.push({ key: `${ctx}${cur.msgid}[${i}]`, source: i === 0 && nplurals !== 1 ? cur.msgid : cur.msgid_plural, target: cur[k], meta: { fuzzy: cur.fuzzy, plural: true, form: i, nplurals, sourceForms: [cur.msgid, cur.msgid_plural] } }));
         if (!forms.length) units.push({ key: `${ctx}${cur.msgid}`, source: cur.msgid, target: '', meta: { fuzzy: cur.fuzzy } });
       } else units.push({ key: `${ctx}${cur.msgid}`, source: cur.msgid, target: cur.msgstr ?? '', meta: { fuzzy: cur.fuzzy } });
     }
-    cur = null; flags = '';
+    cur = null;
   };
   for (const raw of text.replace(/\r\n/g, '\n').split('\n')) {
     const line = raw.trim();
-    if (!line) { end(); continue; }
+    if (!line) { end(); flags = ''; continue; }
+    // A comment after a finished entry starts the next one, even without a blank line between.
+    if (line.startsWith('#') && hasMsgstr()) { end(); flags = ''; }
     if (line.startsWith('#,')) { flags += line; continue; }
     if (line.startsWith('#')) continue;
     const m = line.match(/^(msgctxt|msgid_plural|msgid|msgstr(?:\[\d+\])?)\s+(".*")\s*$/);
     if (m) {
-      if (m[1] === 'msgctxt' || (m[1] === 'msgid' && cur && cur.msgid !== undefined)) end();
-      if (!cur) cur = { fuzzy: /\bfuzzy\b/.test(flags) };
+      if ((m[1] === 'msgctxt' || m[1] === 'msgid') && hasMsgstr()) { end(); }
+      if (!cur) { cur = { fuzzy: /\bfuzzy\b/.test(flags) }; flags = ''; }
       flush(); field = m[1]; buf = [m[2]];
     } else if (line.startsWith('"')) buf.push(line);
   }
@@ -147,33 +152,74 @@ export function parseStrings(text) {
 }
 
 // ---- XML helpers (no DTDs or external entities are read; only the five standard entities and numeric ones).
-export function decodeEntities(s) {
-  return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (m, c) => c)
-    .replace(/&(lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (m, e) => ({ lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" })[e] ?? (e[1] === 'x' ? String.fromCodePoint(parseInt(e.slice(2), 16)) : String.fromCodePoint(parseInt(e.slice(1), 10))));
+const fromCode = n => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : null);
+export function decodeEntities(s, cdata = true) {
+  // CDATA content is taken as it is; entities are decoded only outside it.
+  const parts = cdata ? s.split(/(<!\[CDATA\[[\s\S]*?\]\]>)/) : [s];
+  return parts.map(p => (p.startsWith('<![CDATA[') ? p.slice(9, -3)
+    : p.replace(/&(lt|gt|amp|quot|apos|#\d{1,8}|#x[0-9a-fA-F]{1,8});/g, (m, e) => ({ lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" })[e] ?? (fromCode(e[1] === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) ?? m)))).join('');
 }
-const attr = (tag, name) => { const m = tag.match(new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)')`)); return m ? decodeEntities(m[2] ?? m[3]) : null; };
+const attr = (tag, name) => { const m = tag.match(new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)')`)); return m ? decodeEntities(m[2] ?? m[3], false) : null; };
+// Removes <!-- comments --> with a linear scan.
+function stripComments(s) {
+  let out = '', i = 0;
+  for (;;) {
+    const a = s.indexOf('<!--', i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a);
+    const b = s.indexOf('-->', a + 4);
+    if (b < 0) return out;
+    i = b + 3;
+  }
+}
+// The text between <tag ...> and </tag> for every element named tag, found with indexOf.
+function elements(s, tag) {
+  const out = [];
+  const open = new RegExp(`<${tag}(?=[\\s>/])`, 'g');
+  let m;
+  while ((m = open.exec(s))) {
+    const gt = s.indexOf('>', m.index);
+    if (gt < 0) break;
+    const attrs = s.slice(m.index + tag.length + 1, gt);
+    if (attrs.endsWith('/')) { out.push({ attrs: attrs.slice(0, -1), inner: null }); open.lastIndex = gt + 1; continue; }
+    const close = s.indexOf(`</${tag}>`, gt + 1);
+    if (close < 0) break;
+    out.push({ attrs, inner: s.slice(gt + 1, close) });
+    open.lastIndex = close + tag.length + 3;
+  }
+  return out;
+}
 
 // ---- Android strings.xml: <string>, <plurals><item quantity>, <string-array><item>.
+const UESC_A = new RegExp(BS + BS + 'u([0-9a-fA-F]{4})', 'g');
 function androidText(inner) {
-  let t = inner.trim().replace(/^"([\s\S]*)"$/, '$1');
-  t = t.replace(new RegExp(BS + BS + "(['\"@?])", 'g'), '$1').replace(new RegExp(BS + BS + 'n', 'g'), '\n');
+  let t = inner.trim();
+  const quoted = /^"[\s\S]*"$/.test(t);
+  if (quoted) t = t.slice(1, -1);
+  // Android collapses runs of whitespace outside double quotes.
+  else t = t.replace(/\s+/g, ' ');
+  t = t.replace(UESC_A, (m, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(new RegExp(BS + BS + "(['\"@?])", 'g'), '$1')
+    .replace(new RegExp(BS + BS + 'n', 'g'), '\n').replace(new RegExp(BS + BS + 't', 'g'), '\t');
   return decodeEntities(t);
 }
 export function parseAndroid(text) {
   const units = [];
-  const body = text.replace(/<!--[\s\S]*?-->/g, '');
-  for (const m of body.matchAll(/<string(\s[^>]*)?>([\s\S]*?)<\/string>/g)) {
-    const name = attr(m[1] || '', 'name'); if (name == null) continue;
-    if (attr(m[1] || '', 'translatable') === 'false') continue;
-    units.push({ key: name, text: androidText(m[2]) });
+  const body = stripComments(text);
+  const skip = a => attr(a, 'translatable') === 'false';
+  for (const e of elements(body, 'string')) {
+    const name = attr(e.attrs, 'name'); if (name == null || skip(e.attrs)) continue;
+    units.push({ key: name, text: e.inner == null ? '' : androidText(e.inner) });
   }
-  for (const m of body.matchAll(/<plurals(\s[^>]*)>([\s\S]*?)<\/plurals>/g)) {
-    const name = attr(m[1], 'name');
-    for (const it of m[2].matchAll(/<item(\s[^>]*)>([\s\S]*?)<\/item>/g)) units.push({ key: `${name}#${attr(it[1], 'quantity')}`, text: androidText(it[2]), meta: { plural: true } });
+  for (const e of elements(body, 'plurals')) {
+    if (e.inner == null || skip(e.attrs)) continue;
+    const name = attr(e.attrs, 'name');
+    for (const it of elements(e.inner, 'item')) units.push({ key: `${name}#${attr(it.attrs, 'quantity')}`, text: it.inner == null ? '' : androidText(it.inner), meta: { plural: true } });
   }
-  for (const m of body.matchAll(/<string-array(\s[^>]*)>([\s\S]*?)<\/string-array>/g)) {
-    const name = attr(m[1], 'name'); let k = 0;
-    for (const it of m[2].matchAll(/<item(\s[^>]*)?>([\s\S]*?)<\/item>/g)) units.push({ key: `${name}[${k++}]`, text: androidText(it[2]) });
+  for (const e of elements(body, 'string-array')) {
+    if (e.inner == null || skip(e.attrs)) continue;
+    const name = attr(e.attrs, 'name'); let k = 0;
+    for (const it of elements(e.inner, 'item')) units.push({ key: `${name}[${k++}]`, text: it.inner == null ? '' : androidText(it.inner) });
   }
   return units;
 }
@@ -181,30 +227,43 @@ export function parseAndroid(text) {
 // ---- XLIFF 1.2 (<trans-unit>) and 2.0 (<unit><segment>). Inline tags are kept as text so they can be compared.
 export function parseXliff(text) {
   const units = [];
-  const body = text.replace(/<!--[\s\S]*?-->/g, '');
-  const inner = (block, tag) => { const m = block.match(new RegExp(`<${tag}(\\s[^>]*)?>([\\s\\S]*?)</${tag}>`)); return m ? { attrs: m[1] || '', text: decodeEntities(m[2]) } : null; };
-  for (const m of body.matchAll(/<trans-unit(\s[^>]*)>([\s\S]*?)<\/trans-unit>/g)) {
-    const id = attr(m[1], 'id') ?? attr(m[1], 'resname');
-    const s = inner(m[2], 'source'), t = inner(m[2], 'target');
-    units.push({ key: id, source: s ? s.text : '', target: t ? t.text : undefined, meta: { state: t ? attr(t.attrs, 'state') : null } });
-  }
-  for (const m of body.matchAll(/<unit(\s[^>]*)>([\s\S]*?)<\/unit>/g)) {
-    const id = attr(m[1], 'id');
-    const segs = [...m[2].matchAll(/<segment(\s[^>]*)?>([\s\S]*?)<\/segment>/g)];
-    segs.forEach((sg, k) => {
-      const s = inner(sg[2], 'source'), t = inner(sg[2], 'target');
-      units.push({ key: segs.length > 1 ? `${id}#${attr(sg[1] || '', 'id') ?? k + 1}` : id, source: s ? s.text : '', target: t ? t.text : undefined, meta: { state: attr(sg[1] || '', 'state') } });
-    });
+  const body = stripComments(text);
+  // Translation-memory suggestions (<alt-trans>) aren't the translation.
+  const own = block => elements(block, 'alt-trans').reduce((b, e) => b.replace(`<alt-trans${e.attrs}>${e.inner}</alt-trans>`, ''), block);
+  const first = (block, tag) => { const e = elements(block, tag)[0]; return e ? { attrs: e.attrs, text: e.inner == null ? '' : decodeEntities(e.inner) } : null; };
+  const files = elements(body, 'file');
+  const scopes = files.length > 1 ? files.map((f, i) => ({ prefix: `${attr(f.attrs, 'original') ?? attr(f.attrs, 'id') ?? `file ${i + 1}`}|`, text: f.inner || '' })) : [{ prefix: '', text: body }];
+  for (const sc of scopes) {
+    for (const u of elements(sc.text, 'trans-unit')) {
+      if (u.inner == null || attr(u.attrs, 'translate') === 'no') continue;
+      const id = attr(u.attrs, 'id') ?? attr(u.attrs, 'resname');
+      const block = own(u.inner);
+      const s = first(block, 'source'), t = first(block, 'target');
+      units.push({ key: sc.prefix + id, source: s ? s.text : '', target: t && t.text !== '' ? t.text : undefined, meta: { state: t ? attr(t.attrs, 'state') : null } });
+    }
+    for (const u of elements(sc.text, 'unit')) {
+      if (u.inner == null || attr(u.attrs, 'translate') === 'no') continue;
+      const id = attr(u.attrs, 'id');
+      const segs = elements(u.inner, 'segment');
+      segs.forEach((sg, k) => {
+        const block = sg.inner || '';
+        const s = first(block, 'source'), t = first(block, 'target');
+        units.push({ key: sc.prefix + (segs.length > 1 ? `${id}#${attr(sg.attrs, 'id') ?? k + 1}` : id), source: s ? s.text : '', target: t && t.text !== '' ? t.text : undefined, meta: { state: attr(sg.attrs, 'state') } });
+      });
+    }
   }
   return units;
 }
 
 // ---- Documents: blocks in order (heading, paragraph, list item, code, table row, quote, rule).
+const LIST = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+const startsBlock = l => /^\s*(`{3,}|~{3,})/.test(l) || /^#{1,6}\s/.test(l) || LIST.test(l) || /^\s*\|.*\|\s*$/.test(l) || /^\s*>/.test(l) || /^\s*([-*_])(\s*\1){2,}\s*$/.test(l);
 export function parseDocument(text, markdown = true) {
   const lines = text.replace(BOM_RE, '').replace(/\r\n/g, '\n').split('\n');
   const blocks = [];
   let para = [], start = 0;
   const flushPara = () => { if (para.length) blocks.push({ type: 'paragraph', text: para.join('\n'), line: start + 1 }); para = []; };
+  const last = () => blocks[blocks.length - 1];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
     if (!markdown) {
@@ -216,24 +275,36 @@ export function parseDocument(text, markdown = true) {
       flushPara();
       const mark = fence[1], body = [];
       let j = i + 1;
-      while (j < lines.length && !lines[j].trim().startsWith(mark)) body.push(lines[j++]);
+      // A closing fence is the same character, at least as long, with nothing after it.
+      while (j < lines.length && !(lines[j].trim().startsWith(mark) && /^[`~]+$/.test(lines[j].trim()) && lines[j].trim()[0] === mark[0])) body.push(lines[j++]);
       blocks.push({ type: 'code', text: body.join('\n'), info: fence[2].trim(), line: i + 1 });
       i = j; continue;
     }
     if (!l.trim()) { flushPara(); continue; }
     let m;
-    if ((m = l.match(/^(#{1,6})\s+(.*)$/))) { flushPara(); blocks.push({ type: `h${m[1].length}`, text: m[2].replace(/\s+#+\s*$/, ''), line: i + 1 }); continue; }
+    if ((m = l.match(/^(#{1,6})\s+(.*)$/))) { flushPara(); blocks.push({ type: `h${m[1].length}`, text: m[2].replace(/[ \t]+#+[ \t]*$/, ''), line: i + 1 }); continue; }
     if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) { flushPara(); blocks.push({ type: 'rule', text: '', line: i + 1 }); continue; }
-    if ((m = l.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/))) { flushPara(); blocks.push({ type: /\d/.test(m[2]) ? 'ordered item' : 'list item', text: m[3], depth: m[1].length, line: i + 1 }); continue; }
+    if ((m = l.match(LIST))) { flushPara(); blocks.push({ type: /\d/.test(m[2]) ? 'ordered item' : 'list item', text: m[3], depth: m[1].length, line: i + 1 }); continue; }
     if (/^\s*\|.*\|\s*$/.test(l)) {
       flushPara();
       if (/^\s*\|[\s:|-]+\|\s*$/.test(l)) continue; // the separator row
       blocks.push({ type: 'table row', text: l.trim(), line: i + 1 }); continue;
     }
-    if ((m = l.match(/^\s*>\s?(.*)$/))) { flushPara(); blocks.push({ type: 'quote', text: m[1], line: i + 1 }); continue; }
+    if ((m = l.match(/^\s*>\s?(.*)$/))) {
+      flushPara();
+      // Consecutive quote lines are one quote.
+      if (last()?.type === 'quote' && last().endLine === i) { last().text += '\n' + m[1]; last().endLine = i + 1; }
+      else blocks.push({ type: 'quote', text: m[1], line: i + 1, endLine: i + 1 });
+      continue;
+    }
+    // A line straight after a list item (no blank line) that starts no new block continues the item.
+    if (!para.length && last() && (last().type === 'list item' || last().type === 'ordered item') && (last().endLine ?? last().line) === i && !startsBlock(l)) {
+      last().text += '\n' + l.trim(); last().endLine = i + 1; continue;
+    }
     if (!para.length) start = i;
     para.push(l);
   }
   flushPara();
+  for (const b of blocks) delete b.endLine;
   return blocks;
 }
