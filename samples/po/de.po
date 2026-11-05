@@ -1,0 +1,22 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de\n"
+
+msgid "Saved %s files."
+msgstr "%d Dateien gespeichert."
+
+#, fuzzy
+msgid "Sync is paused."
+msgstr "Die Synchronisierung ist beendet."
+
+msgid "Upload failed: %(reason)s"
+msgstr "Hochladen fehlgeschlagen: %(reason)s"
+
+msgid "Remove"
+msgstr ""
+
+msgid "One file"
+msgid_plural "%d files"
+msgstr[0] "Eine Datei"
+msgstr[1] "%d Dateien"

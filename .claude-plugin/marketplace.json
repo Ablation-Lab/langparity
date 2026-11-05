@@ -1,0 +1,16 @@
+{
+  "name": "driftcheck",
+  "description": "Driftcheck from Ablation Lab: checks a translation against its source for meaning drift, missing parts, broken placeholders and formatting, and tone, with fixes.",
+  "owner": {
+    "name": "Ablation Lab"
+  },
+  "plugins": [
+    {
+      "name": "driftcheck",
+      "source": "./plugin",
+      "description": "Checks a translation against its source for meaning drift, missing parts, broken placeholders and formatting, and tone, with fixes.",
+      "version": "1.0.0",
+      "category": "productivity"
+    }
+  ]
+}

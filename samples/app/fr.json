@@ -1,0 +1,20 @@
+{
+  "greeting": "Bonjour, {nom} !",
+  "inbox": "{count, plural, one {Vous avez # nouveau message}}",
+  "cart": {
+    "total": "Votre total est de {amount}. Livraison gratuite dès 30 $."
+  },
+  "settings": {
+    "title": "Paramètres",
+    "save": "Save changes",
+    "danger": "Supprimez votre compte. Cette action est <b>irréversible."
+  },
+  "help": "Consultez les <a href=\"https://example.com/aide\">pages d'aide</a>.",
+  "trial": "Votre essai gratuit commence dans 14 jours.",
+  "onboarding": {
+    "tip": "Tu peux modifier cela plus tard dans les Réglages."
+  },
+  "legacy": {
+    "banner": "Nouvelle version disponible !"
+  }
+}

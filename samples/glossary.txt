@@ -1,0 +1,4 @@
+# source term = required translation (French)
+Settings = Paramètres
+account = compte
+free trial = essai gratuit

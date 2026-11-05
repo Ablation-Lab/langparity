@@ -1,0 +1,18 @@
+{
+  "greeting": "Hello, {name}!",
+  "inbox": "{count, plural, one {You have # new message} other {You have # new messages}}",
+  "cart": {
+    "total": "Your total is {amount}. Free shipping on orders over $50."
+  },
+  "settings": {
+    "title": "Settings",
+    "save": "Save changes",
+    "danger": "Delete your account permanently. This <b>cannot</b> be undone."
+  },
+  "help": "Read the <a href=\"https://example.com/help\">help pages</a> or email support@example.com.",
+  "trial": "Your free trial ends in 14 days.",
+  "onboarding": {
+    "tip": "You can change this later in Settings."
+  },
+  "logout": "Log out"
+}

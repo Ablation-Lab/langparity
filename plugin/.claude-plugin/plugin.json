@@ -1,0 +1,23 @@
+{
+  "name": "driftcheck",
+  "displayName": "Driftcheck",
+  "version": "1.0.0",
+  "description": "Checks a translation against its source before you ship it: a local script lines up the source and target strings or document sections and reports missing and extra parts, broken placeholders, tags, links and formatting, changed numbers and untranslated text, then Claude reads each pair for meaning drift and tone and suggests a fix for every issue. Works with JSON and ARB, gettext .po, .properties, Apple .strings, Android strings.xml, XLIFF, and Markdown or text documents. It reads only the files you give it, writes its report to a temporary folder, and makes no network requests.",
+  "author": {
+    "name": "Ablation Lab"
+  },
+  "homepage": "https://github.com/Ablation-Lab/driftcheck",
+  "repository": "https://github.com/Ablation-Lab/driftcheck",
+  "license": "MIT",
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://github.com/Ablation-Lab/driftcheck/blob/main/plugin/README.md",
+  "supportUrl": "https://github.com/Ablation-Lab/driftcheck/issues",
+  "privacyPolicyUrl": "https://github.com/Ablation-Lab/driftcheck/blob/main/plugin/README.md#privacy",
+  "keywords": [
+    "translation",
+    "localization",
+    "i18n",
+    "l10n",
+    "proofreading"
+  ]
+}
