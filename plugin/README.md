@@ -102,7 +102,7 @@ Langparity has no server, account or telemetry and sends nothing anywhere. The s
 
 ## The name
 
-Langparity was first called Driftcheck. It was renamed before submission because many tools already use that name or "drift-check" for configuration, documentation and code drift, including an updater for agent skills and plugins and a Claude Code plugin command, so the old name was easy to confuse with them. A search of GitHub, the plugin directory, community skill directories, npm, PyPI and the web found no plugin, skill, package or product called Langparity; the nearest name is LangParty, a language-exchange community.
+Langparity was first called Driftcheck. It was renamed before submission because many tools already use that name or "drift-check" for configuration, documentation and code drift, including an updater for agent skills and plugins and a Claude Code plugin command, so the old name was easy to confuse with them. A search of GitHub, the plugin directory, community skill directories, npm, PyPI and the web found no plugin, skill, package or product called Langparity, only a similar name used by an unrelated language-learning service.
 
 ## Limits
 
