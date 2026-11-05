@@ -23,6 +23,6 @@ Or copy `plugin/skills/langparity` into `~/.claude/skills/` to use it as a perso
 
 Keep `plugin/README.md` and `SKILL.md` in step, and the versions in `plugin.json` and `marketplace.json` equal.
 
-Langparity was first called Driftcheck; see [The name](plugin/README.md#the-name) for why it was renamed.
+Langparity was renamed before release; see [The name](plugin/README.md#the-name) for its first name and why it changed.
 
 MIT licence. An independent project, not made or endorsed by Anthropic.
