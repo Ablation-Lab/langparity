@@ -20,8 +20,8 @@ On older versions, add the marketplace first with `/plugin marketplace add Ablat
 
 **The script (mechanical checks):**
 
-- **Structure:** keys missing from the translation or left over in it, duplicate keys (in every format except JSON and ARB, where the parser keeps the last one), and in documents, headings, paragraphs, list items, table rows or code blocks with no counterpart. It lines the documents up section by section. Where a section has the same blocks in both, they pair in order; otherwise it matches blocks of the same kind by the numbers, links, emails, inline code and placeholders they contain and by their length. Pairs near an added or removed section, or in a section where blocks of one kind were added or removed, are marked "alignment uncertain", and Claude checks them first.
-- **Placeholders:** `{name}`, `{{name}}`, `${name}`, `%{name}`, `{0}` and typed ones like `{0,number,integer}`, printf (`%s`, `%1$d`, `%@`), Python `%(name)s` and `:name`, compared exactly. Plural forms are compared fairly: a language with more forms (Russian `few` and `many`) is checked against the source's plural, and `%d` in a singular form is accepted.
+- **Structure:** keys missing from the translation or left over in it, duplicate keys (in every format except JSON and ARB, where the parser keeps the last one), and in documents, headings, paragraphs, list items, table rows or code blocks with no counterpart. It lines the documents up section by section. Where a section has the same blocks in both, they pair in order; otherwise it matches blocks of the same kind by the numbers, links, emails, inline code and placeholders they contain and by their length. Pairs near an added or removed section, or in a section where blocks of one kind were added or removed, are marked "alignment uncertain", and Claude checks them first. The alignment isn't perfect (see Limits): Claude reads every pair side by side, so a pairing that's off shows up there even when it isn't marked.
+- **Placeholders:** `{name}`, `{{name}}`, `${name}`, `%{name}`, `{0}` and typed ones like `{0,number,integer}`, printf (`%s`, `%1$d`, `%@`), Python `%(name)s` and `:name`, compared exactly (typed ones by name and type, so a changed date style isn't flagged). Plural forms are compared fairly: a language with more forms (Russian `few` and `many`) is checked against the source's plural, and `%d` in a singular form is accepted.
 - **ICU messages:** the argument names, select branches, a required `other` branch, valid plural categories, the placeholders used inside the branches, and nested messages. Different plural categories are expected between languages (Polish has `few` and `many`), so those are only noted.
 - **Markup:** HTML and XML tags (including XLIFF inline tags), link targets, Markdown links, inline code and unclosed bold markers.
 - **Numbers, URLs and email addresses:** present in both, allowing for different digit grouping (1,000 / 1.000 / 1 000).
@@ -60,7 +60,7 @@ To try it:
 
 For the first, you should see 5 FAIL and 7 WARN from the script, plus Claude's meaning and tone issues: the trial that "starts" instead of "ends", "permanently" dropped from the delete warning, and "tu" where the rest uses "vous", each with a corrected French string. For the second, the missing API-key paragraph and the unclosed bold marker; for the third, `%s` changed to `%d` and "beendet" (ended) for "paused".
 
-**Developer note.** Driftcheck has not been checked with Seaready yet. (This note is updated once it has.)
+**Developer note.** Seaready, our plugin submission checker, was built first. Driftcheck was then checked with it before submission: its local checks found no failures after one false alarm was recorded (the Markdown strikethrough pattern ~~ looked like a home-folder path; it is listed with its reason in .plugin-check-allow.json and shown as allowed in the report), and one warning because the repository had no GitHub remote yet. Its online name and overlap search found no plugin with the same name, many unrelated tools called driftcheck, and several similar tools, now described under How it compares. Driftcheck also went through a review council (three reviewers and a judge) and two rounds of fixes, each rechecked by a fresh reviewer; the issues left after that are listed under Limits. It's our own pre-check; the directory's validation and Anthropic's reviewers make the actual decision.
 
 ## What it runs, reads and writes
 
@@ -94,13 +94,23 @@ Driftcheck has no server, account or telemetry and sends nothing anywhere. The s
 
 ## How it compares
 
-(Filled in after the name and overlap search.)
+- **Translation-management QA checks** (Weblate, Tolgee, Localizely, Phrase, SimpleLocalize's file linter) check placeholders, ICU syntax, tags and plural categories inside their platforms. Driftcheck runs locally on your files with no account, adds Markdown and text documents, and has Claude read every pair for meaning and tone, with a corrected string for each problem it confirms.
+- **l10n-catalogs** (claudskills.com) is guidance for Claude on checking .po, XLIFF, ARB, strings.xml and ICU files. Driftcheck adds a script that does the exact checks first, so Claude's reading starts from a list of mechanical findings and lined-up pairs.
+- **Key-sync tools** such as i18next-locales-sync and laravel-translations-checker find missing or extra keys. Driftcheck also checks what's inside each string, and its meaning.
+- **Translation skills** (for example Plane's and ShapeShift's translate skills, translating-products-skill, translate-epub) write new translations. Driftcheck reviews a translation you already have.
+- **intl-review** (ethereum.org) and **i18n-sync** review one project's translations against its own glossary or languages. Driftcheck works on any project and format, with an optional glossary.
+- **The name:** many tools called driftcheck or drift-check detect configuration, documentation or code drift (for example kinti/driftcheck, deichrenner/driftcheck, and the claude-drift plugin's drift-check command). They aren't related; Driftcheck is about translations drifting from their source.
 
 ## Limits
 
 - Claude's judgement of meaning and tone is only as good as its grasp of the language. It's strong in widely used languages and weaker in rare ones; it says when it can't judge.
 - YAML, `.resx`, `.xlsx`, `.docx`, gettext `.mo` and SDLXLIFF files aren't read; export them to one of the supported formats first. UTF-16 files need a byte-order mark, and ISO-8859-1 `.properties` files must be saved as UTF-8 first.
 - Document alignment can't always tell which of several similar paragraphs is missing when they share no numbers, links or code; those pairs are marked uncertain and Claude checks them.
+- If one block is removed from a section and another of the same kind added, the section still has the same blocks, so they pair in order: the pairs after the change are off by one, nothing is marked missing, and the script's count and exit code don't show it. Claude sees the mismatched pairs side by side.
+- When a whole section is added or removed, the sections on either side are marked uncertain, but in long, repetitive documents (an FAQ, say) the pairing can shift further than that, and the section reported missing can be its neighbour.
+- A bullet list translated as a numbered list (or the reverse) is reported as missing and added blocks; it's marked uncertain.
+- Documents with more than about 2,000 headings are lined up section by section in order, without the uncertainty marks.
+- ICU: a plural that drops `{count}` from every branch while keeping `#` isn't caught; a placeholder dropped from one select branch is missed when other branches still have it; `#` in the source against `{count}` in a nested select is reported as a change; and typed arguments' styles (such as the currency in `::currency/USD`) aren't compared.
 - Markdown parsing is simple: setext headings (underlined with `===`), YAML front matter and indented code blocks are read as ordinary paragraphs.
 - Some rarer cases give false alarms or are missed: numbers in reference-style links, `.properties` escapes such as `http\://`, `.strings` `\U` escapes, deeply nested JSON (thousands of levels), and Android strings with unusual whitespace.
 - One string longer than 20,000 characters gets only the placeholder and tag checks.

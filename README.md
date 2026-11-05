@@ -1,6 +1,6 @@
 # Driftcheck
 
-Driftcheck is a Claude Code plugin that checks a translation against its source before you ship it: a local script reports missing and extra parts, broken placeholders, ICU plurals, tags, links and formatting, changed numbers and untranslated text, then Claude reads every pair for meaning drift and tone and suggests a fix for each issue. The plugin lives in [plugin/](plugin/); its README, [plugin/README.md](plugin/README.md), describes what it checks, what it reads and writes, and how to try it.
+Driftcheck is a Claude Code plugin that checks a translation against its source before you ship it: a local script reports missing and extra parts, broken placeholders, ICU plurals, tags, links and formatting, changed numbers and untranslated text, then Claude reads every pair for meaning drift and tone and suggests a corrected translation for each problem it confirms. The plugin lives in [plugin/](plugin/); its README, [plugin/README.md](plugin/README.md), describes what it checks, what it reads and writes, and how to try it.
 
 ## Install
 
