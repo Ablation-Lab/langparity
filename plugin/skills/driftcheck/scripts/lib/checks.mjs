@@ -66,26 +66,31 @@ function diffMultiset(a, b) {
 }
 const diffSet = (a, b) => { const A = new Set(a), B = new Set(b); return { missing: [...A].filter(x => !B.has(x)), extra: [...B].filter(x => !A.has(x)) }; };
 
+// Typed arguments are compared by name and type only: {d, date, long} for {d, date, medium} is a
+// choice of style, not a broken placeholder.
+const TYPED = /^\{([\w.-]+),(number|date|time|choice|spellout|ordinal|duration)(,.*)?\}$/;
 export function placeholders(s) {
   const found = [];
   let rest = s;
-  for (const re of PLACEHOLDER_RES) rest = rest.replace(re, m => { found.push(m.replace(/\s+/g, '')); return ' '.repeat(m.length); });
+  for (const re of PLACEHOLDER_RES) rest = rest.replace(re, m => { found.push(m.replace(/\s+/g, '').replace(TYPED, '{$1,$2}')); return ' '.repeat(m.length); });
   return found;
 }
 
-// Placeholders anywhere inside an ICU argument's branches, nested ICU included.
+// Placeholders inside an ICU argument's branches, at this level only (nested arguments are checked
+// on their own). In a plural, the argument itself written as {count} means the same as #.
 function icuPlaceholders(arg) {
   const all = [];
   for (const b of arg.branches) {
     const inner = icuArgs(b.body);
-    all.push(...placeholders(outsideIcu(b.body, inner)));
-    for (const a of inner) all.push(`{${a.name}, ${a.kind}}`, ...icuPlaceholders(a));
+    all.push(...placeholders(outsideIcu(b.body, inner)).filter(p => arg.kind === 'select' || p !== `{${arg.name}}`));
+    for (const a of inner) all.push(`{${a.name}, ${a.kind}}`);
   }
   return all;
 }
 
+// Every detail here is fixed text; the argument name (from the file) is always the first value.
 function checkIcu(sa, ta, f, path = '') {
-  for (const a of ta) if (a.unbalanced) f.push({ check: 'icu', sev: 'FAIL', detail: `unbalanced braces in the ICU message for argument`, values: [path + a.name] });
+  for (const a of ta) if (a.unbalanced) f.push({ check: 'icu', sev: 'FAIL', detail: 'unbalanced braces in the ICU message for argument', values: [path + a.name] });
   const d = diffMultiset(sa.map(a => `${a.name}, ${a.kind}`), ta.map(a => `${a.name}, ${a.kind}`));
   if (d.missing.length) f.push({ check: 'icu', sev: 'FAIL', detail: 'ICU argument missing in the translation', values: d.missing.map(x => `{${path}${x}}`) });
   if (d.extra.length) f.push({ check: 'icu', sev: 'FAIL', detail: 'ICU argument not in the source', values: d.extra.map(x => `{${path}${x}}`) });
@@ -96,24 +101,25 @@ function checkIcu(sa, ta, f, path = '') {
     const name = path + s.name;
     if (s.kind === 'select') {
       const bd = diffMultiset(sk, tk);
-      if (bd.missing.length) f.push({ check: 'icu', sev: 'FAIL', detail: `select branch missing in the translation for argument ${name}`, values: bd.missing });
-      if (bd.extra.length) f.push({ check: 'icu', sev: 'FAIL', detail: `select branch not in the source for argument ${name}`, values: bd.extra });
+      if (bd.missing.length) f.push({ check: 'icu', sev: 'FAIL', detail: 'select branch missing in the translation (argument, then branches)', values: [name, ...bd.missing] });
+      if (bd.extra.length) f.push({ check: 'icu', sev: 'FAIL', detail: 'select branch not in the source (argument, then branches)', values: [name, ...bd.extra] });
     } else {
-      if (!tk.includes('other')) f.push({ check: 'icu', sev: 'FAIL', detail: `the plural for argument ${name} has no "other" branch, which ICU requires` });
+      if (!tk.includes('other')) f.push({ check: 'icu', sev: 'FAIL', detail: 'this plural has no "other" branch, which ICU requires (argument)', values: [name] });
       const odd = tk.filter(b => !PLURAL_CATS.has(b) && !/^=\d+$/.test(b));
-      if (odd.length) f.push({ check: 'icu', sev: 'FAIL', detail: `unknown plural branch for argument ${name}`, values: odd });
+      if (odd.length) f.push({ check: 'icu', sev: 'FAIL', detail: 'unknown plural branch (argument, then branches)', values: [name, ...odd] });
       const exact = sk.filter(b => /^=\d+$/.test(b) && !tk.includes(b));
-      if (exact.length) f.push({ check: 'icu', sev: 'WARN', detail: `exact-number branch in the source but not the translation, for argument ${name}`, values: exact });
-      if (sk.join() !== tk.join()) f.push({ check: 'icu', sev: 'NOTE', detail: `plural branches for argument ${name} differ (languages differ; check the target language's categories)`, values: [sk.join(' '), tk.join(' ')] });
+      if (exact.length) f.push({ check: 'icu', sev: 'WARN', detail: 'exact-number branch in the source but not the translation (argument, then branches)', values: [name, ...exact] });
+      if (sk.join() !== tk.join()) f.push({ check: 'icu', sev: 'NOTE', detail: 'plural branches differ; languages differ, so check the target language\'s categories (argument, source branches, translation branches)', values: [name, sk.join(' '), tk.join(' ')] });
     }
     // Placeholders used in any branch, compared as sets: a language with more or fewer plural forms
     // repeats them a different number of times.
     const pd = diffSet(icuPlaceholders(s), icuPlaceholders(t));
-    if (pd.missing.length) f.push({ check: 'placeholder', sev: 'FAIL', detail: `placeholder used in the source's branches for argument ${name} but in none of the translation's`, values: pd.missing });
-    if (pd.extra.length) f.push({ check: 'placeholder', sev: 'FAIL', detail: `placeholder in the translation's branches for argument ${name} but not the source's`, values: pd.extra });
-    // Nested ICU arguments: names and required branches, by branch key where both have it.
+    if (pd.missing.length) f.push({ check: 'placeholder', sev: 'FAIL', detail: 'placeholder used in the source\'s branches but in none of the translation\'s (argument, then placeholders)', values: [name, ...pd.missing] });
+    if (pd.extra.length) f.push({ check: 'placeholder', sev: 'FAIL', detail: 'placeholder in the translation\'s branches but not the source\'s (argument, then placeholders)', values: [name, ...pd.extra] });
+    // Nested ICU arguments: names and required branches, compared branch by branch where both have
+    // the same branch.
     for (const sb of s.branches) {
-      const tb = t.branches.find(b => b.key === sb.key) || (s.kind !== 'select' ? t.branches.find(b => b.key === 'other') : null);
+      const tb = t.branches.find(b => b.key === sb.key);
       if (tb) checkIcu(icuArgs(sb.body), icuArgs(tb.body), f, `${name}.${sb.key}.`);
     }
   }

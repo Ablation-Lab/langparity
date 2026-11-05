@@ -20,7 +20,7 @@ On older versions, add the marketplace first with `/plugin marketplace add Ablat
 
 **The script (mechanical checks):**
 
-- **Structure:** keys missing from the translation or left over in it, duplicate keys (in every format except JSON and ARB, where the parser keeps the last one), and in documents, headings, paragraphs, list items, table rows or code blocks with no counterpart. It lines the documents up section by section, matching blocks of the same kind by the numbers, links, inline code and placeholders they contain and by their length. Where blocks were added or removed and that leaves a choice, it marks those pairs "alignment uncertain", and Claude checks them first.
+- **Structure:** keys missing from the translation or left over in it, duplicate keys (in every format except JSON and ARB, where the parser keeps the last one), and in documents, headings, paragraphs, list items, table rows or code blocks with no counterpart. It lines the documents up section by section. Where a section has the same blocks in both, they pair in order; otherwise it matches blocks of the same kind by the numbers, links, emails, inline code and placeholders they contain and by their length. Pairs near an added or removed section, or in a section where blocks of one kind were added or removed, are marked "alignment uncertain", and Claude checks them first.
 - **Placeholders:** `{name}`, `{{name}}`, `${name}`, `%{name}`, `{0}` and typed ones like `{0,number,integer}`, printf (`%s`, `%1$d`, `%@`), Python `%(name)s` and `:name`, compared exactly. Plural forms are compared fairly: a language with more forms (Russian `few` and `many`) is checked against the source's plural, and `%d` in a singular form is accepted.
 - **ICU messages:** the argument names, select branches, a required `other` branch, valid plural categories, the placeholders used inside the branches, and nested messages. Different plural categories are expected between languages (Polish has `few` and `many`), so those are only noted.
 - **Markup:** HTML and XML tags (including XLIFF inline tags), link targets, Markdown links, inline code and unclosed bold markers.
@@ -88,7 +88,7 @@ Driftcheck has no server, account or telemetry and sends nothing anywhere. The s
 ## Design decisions
 
 - **Two passes, each doing what it's good at.** A script is exact about placeholders, tags and numbers and never gets tired; Claude understands meaning and tone. The script's findings also tell Claude where to look hardest.
-- **Every issue gets a fix.** A list of problems without corrections leaves the hard part to you, so each meaning or tone issue comes with a suggested translation.
+- **Every confirmed problem gets a fix.** A list of problems without corrections leaves the hard part to you, so each FAIL and WARN Claude confirms comes with a suggested translation.
 - **Read only.** It reports and suggests; it doesn't rewrite your files unless you ask.
 - **Languages differ, so some differences are only notes.** Plural categories, end punctuation and spacing vary by language and are flagged as notes, not errors.
 
@@ -104,6 +104,8 @@ Driftcheck has no server, account or telemetry and sends nothing anywhere. The s
 - Markdown parsing is simple: setext headings (underlined with `===`), YAML front matter and indented code blocks are read as ordinary paragraphs.
 - Some rarer cases give false alarms or are missed: numbers in reference-style links, `.properties` escapes such as `http\://`, `.strings` `\U` escapes, deeply nested JSON (thousands of levels), and Android strings with unusual whitespace.
 - One string longer than 20,000 characters gets only the placeholder and tag checks.
+- A very long document with no headings and a paragraph missing (thousands of paragraphs) takes several seconds and is marked uncertain throughout; add headings or split it.
+- In ICU plurals, the argument written out in a branch (`{count}`) is treated as the same as `#`.
 - Numbers written out as words ("five" for 5) and ordinals aren't matched.
 - Very large files (thousands of strings) are read in parts; for more than about 600 pairs Claude reads every flagged pair and as many others as it can, and says how many.
 - The checks look at each pair on its own, apart from terminology and register, which Claude checks across the file.

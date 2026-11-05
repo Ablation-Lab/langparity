@@ -1,6 +1,6 @@
 ---
 name: driftcheck
-description: Checks a translation against its source before it ships. A local script lines up the source and target strings or document sections and reports missing and extra parts, broken placeholders, ICU plurals, tags, links and formatting, changed numbers and untranslated text; then Claude reads every pair for meaning drift, omissions, tone and terminology and suggests a corrected translation for each issue. Works with JSON and ARB, gettext .po, .properties, Apple .strings, Android strings.xml, XLIFF, and Markdown or text documents. Use when the user asks to check, review, QA or proofread a translation or localization file against its source, compare two language versions of a document, or find what's missing or broken in a translated file. Not for translating new text, or for proofreading a document that has no source version.
+description: Checks a translation against its source before it ships. A local script lines up the source and target strings or document sections and reports missing and extra parts, broken placeholders, ICU plurals, tags, links and formatting, changed numbers and untranslated text; then Claude reads every pair for meaning drift, omissions, tone and terminology and suggests a corrected translation for each problem it confirms. Works with JSON and ARB, gettext .po, .properties, Apple .strings, Android strings.xml, XLIFF, and Markdown or text documents. Use when the user asks to check, review, QA or proofread a translation or localization file against its source, compare two language versions of a document, or find what's missing or broken in a translated file. Not for translating new text, or for proofreading a document that has no source version.
 license: MIT
 compatibility: Claude Code with Node.js 18 or later. Reads only the files given; writes its report to a temporary folder.
 ---
@@ -9,7 +9,7 @@ compatibility: Claude Code with Node.js 18 or later. Reads only the files given;
 
 # Driftcheck
 
-Check a translation against its source: first the mechanical checks (the script), then a careful reading of every pair for meaning and tone (you). Report each issue with a corrected translation.
+Check a translation against its source: first the mechanical checks (the script), then a careful reading of every pair for meaning and tone (you). Report each confirmed problem with a corrected translation.
 
 ## Ground rules
 

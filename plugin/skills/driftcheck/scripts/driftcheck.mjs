@@ -55,7 +55,12 @@ function readText(file) {
 
 function parseKeyed(format, text) {
   switch (format) {
-    case 'json': return parseJson(text).map(u => (/_(zero|one|two|few|many|other)$/.test(u.key) ? { ...u, meta: { ...u.meta, plural: true } } : u));
+    case 'json': {
+      // i18next plural keys: name_one, name_few... only when the same file has name_other.
+      const units = parseJson(text);
+      const keys = new Set(units.map(u => u.key));
+      return units.map(u => { const m = u.key.match(/^(.*)_(zero|one|two|few|many|other)$/); return m && keys.has(`${m[1]}_other`) ? { ...u, meta: { ...u.meta, plural: true } } : u; });
+    }
     case 'properties': return parseProperties(text);
     case 'strings': return parseStrings(text);
     case 'android': return parseAndroid(text);
@@ -139,11 +144,37 @@ export function alignBlocks(a, b) {
     return h + sizeSim + anchorScore(whole(x), whole(y)) + 1;
   };
   const secPairs = alignScored(sa, sb, (x, y) => secScore(x, y)).pairs;
+  // When a whole section was added or removed, the sections on either side may be paired wrongly
+  // too, so those are flagged as well.
+  const nearGap = new Set();
+  secPairs.forEach(([x, y], i) => { if (!x || !y) for (const k of [i - 1, i, i + 1]) nearGap.add(k); });
   const out = [];
-  for (const [x, y] of secPairs) {
-    if (x && !y) { for (const bl of [x.head, ...x.blocks].filter(Boolean)) out.push([bl, null, { uncertain: false }]); continue; }
-    if (!x && y) { for (const bl of [y.head, ...y.blocks].filter(Boolean)) out.push([null, bl, { uncertain: false }]); continue; }
+  for (const [i, [x, y]] of secPairs.entries()) {
+    const flag = nearGap.has(i);
+    if (x && !y) { for (const bl of [x.head, ...x.blocks].filter(Boolean)) out.push([bl, null, { uncertain: true }]); continue; }
+    if (!x && y) { for (const bl of [y.head, ...y.blocks].filter(Boolean)) out.push([null, bl, { uncertain: true }]); continue; }
+    if (flag) {
+      const start = out.length;
+      alignSection(x, y);
+      for (let k = start; k < out.length; k++) out[k][2].uncertain = true;
+      continue;
+    }
+    alignSection(x, y);
+  }
+  return out;
+  function alignSection(x, y) {
     if (x.head) out.push([x.head, y.head, { uncertain: false }]);
+    // Same number of blocks of every kind: pair them in order, kind by kind. A complete translation
+    // never gets a "missing" block this way.
+    const cx0 = new Map(), cy0 = new Map();
+    for (const bl of x.blocks) cx0.set(kind(bl), (cx0.get(kind(bl)) || 0) + 1);
+    for (const bl of y.blocks) cy0.set(kind(bl), (cy0.get(kind(bl)) || 0) + 1);
+    if (cx0.size === cy0.size && [...cx0].every(([k, v]) => cy0.get(k) === v)) {
+      const queues = new Map();
+      for (const bl of y.blocks) { if (!queues.has(kind(bl))) queues.set(kind(bl), []); queues.get(kind(bl)).push(bl); }
+      for (const bl of x.blocks) out.push([bl, queues.get(kind(bl)).shift(), { uncertain: false }]);
+      return;
+    }
     const r = alignScored(x.blocks, y.blocks, score);
     // Only a kind whose count differs between the two sections, with two or more blocks of it, can be
     // paired wrongly (with one paragraph and none, the missing one is certain).
@@ -152,7 +183,6 @@ export function alignBlocks(a, b) {
     const unsure = new Set([...new Set([...cx.keys(), ...cy.keys()])].filter(k => (cx.get(k) || 0) !== (cy.get(k) || 0) && Math.max(cx.get(k) || 0, cy.get(k) || 0) >= 2));
     for (const [p, q] of r.pairs) out.push([p, q, { uncertain: r.approximate || unsure.has(kind(p || q)) }]);
   }
-  return out;
 }
 
 const cp = n => String.fromCodePoint(n);
@@ -199,7 +229,7 @@ export function run(o) {
       }
       for (let k = findings.length - 1; k >= 0; k--) if (findings[k].values && !findings[k].values.length) findings.splice(k, 1);
     }
-    pairs.push({ id: pairs.length + 1, ...p, findings });
+    pairs.push({ id: pairs.length + 1, ...p, target: p.target ?? null, findings });
     return pairs[pairs.length - 1];
   };
 
@@ -257,7 +287,7 @@ export function run(o) {
     for (const [k, u] of smap) {
       const t = tmap.get(k);
       const plural = u.meta?.plural && PLURAL_SUFFIX.test(k);
-      if (!t && plural && targetBases.has(pluralBase(k))) { pairs.push({ id: pairs.length + 1, key: k, source: u.text, target: null, findings: [{ check: 'plural', sev: 'NOTE', detail: 'this plural form isn\'t in the translation; the target language may not use it' }] }); continue; }
+      if (!t && plural && !/(#|_)other$/.test(k) && targetBases.has(pluralBase(k))) { pairs.push({ id: pairs.length + 1, key: k, source: u.text, target: null, findings: [{ check: 'plural', sev: 'NOTE', detail: 'this plural form isn\'t in the translation; the target language may not use it' }] }); continue; }
       const isOne = /(#|_)one$/.test(k);
       const p = add({ key: k, source: u.text, target: t ? t.text : undefined }, plural ? { pluralUnion: unionFor(pluralBase(k)), singularForm: isOne } : {});
       if (u.meta?.nonString || t?.meta?.nonString) p.findings.push({ check: 'type', sev: 'NOTE', detail: 'not a string value' });

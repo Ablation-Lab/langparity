@@ -8,8 +8,8 @@ Mechanical checks (the script): 5 FAIL, 7 WARN, 1 NOTE.
 
 | Pair / key | What's wrong | Found by |
 |---|---|---|
-| `logout` | missing from the translation | script (FAIL) |
-| `legacy.banner` | in the translation but not the source | script (WARN) |
+| 10 `logout` | missing from the translation | script (FAIL) |
+| (structure) `legacy.banner` | in the translation but not the source | script (WARN) |
 | 1 `greeting` | placeholder `{name}` renamed to `{nom}` | script (FAIL, twice: missing and extra) |
 | 2 `inbox` | ICU plural has no `other` branch | script (FAIL) |
 | 3 `cart.total` | $50 became 30 $ | script (WARN, twice) |
@@ -23,15 +23,15 @@ Mechanical checks (the script): 5 FAIL, 7 WARN, 1 NOTE.
 
 Mechanical checks: 2 FAIL, 6 WARN.
 
-- The last paragraph (never share your API key) is missing: script (FAIL).
-- `**5 Minuten.` has an unclosed bold marker: script (FAIL).
-- Version 2.4 became 2.5, and the releases link points to a different page: script (two WARN each: the old value missing, the new one added).
-- The code block and the inline code `tool check` were translated: script (WARN, twice).
+- Pair 10, the last paragraph (never share your API key), is missing: script (FAIL).
+- Pair 2: `**5 Minuten.` has an unclosed bold marker: script (FAIL).
+- Pair 4: version 2.4 became 2.5, and the releases link points to a different page: script (two WARN each: the old value missing, the new one added).
+- Pairs 5 and 8: the code block and the inline code `tool check` were translated: script (WARN each).
 
 ## po/de.po
 
 Mechanical checks: 3 FAIL, 1 WARN.
 
-- `Saved %s files.`: `%s` became `%d`: script (FAIL, twice).
-- `Sync is paused.`: marked fuzzy (script WARN), and "beendet" means ended, not paused: Claude (meaning drift).
-- `Remove`: empty translation: script (FAIL).
+- Pair 1, `Saved %s files.`: `%s` became `%d`: script (FAIL, twice).
+- Pair 2, `Sync is paused.`: marked fuzzy (script WARN), and "beendet" means ended, not paused: Claude (meaning drift).
+- Pair 4, `Remove`: empty translation: script (FAIL).
