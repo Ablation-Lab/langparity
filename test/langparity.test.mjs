@@ -5,15 +5,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { run, parseArgs, alignBlocks, show } from '../plugin/skills/driftcheck/scripts/driftcheck.mjs';
-import { parseJson, parsePo, parseProperties, parseStrings, parseAndroid, parseXliff, parseDocument, detectFormat } from '../plugin/skills/driftcheck/scripts/lib/parsers.mjs';
-import { checkPair, icuArgs, placeholders, numbers, parseGlossary, checkGlossary } from '../plugin/skills/driftcheck/scripts/lib/checks.mjs';
+import { run, parseArgs, alignBlocks, show } from '../plugin/skills/langparity/scripts/langparity.mjs';
+import { parseJson, parsePo, parseProperties, parseStrings, parseAndroid, parseXliff, parseDocument, detectFormat } from '../plugin/skills/langparity/scripts/lib/parsers.mjs';
+import { checkPair, icuArgs, placeholders, numbers, parseGlossary, checkGlossary } from '../plugin/skills/langparity/scripts/lib/checks.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const SCRIPT = path.join(here, '..', 'plugin', 'skills', 'driftcheck', 'scripts', 'driftcheck.mjs');
+const SCRIPT = path.join(here, '..', 'plugin', 'skills', 'langparity', 'scripts', 'langparity.mjs');
 const SAMPLES = path.join(here, '..', 'samples');
 const made = [];
-const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'driftcheck-test-')); made.push(d); return d; };
+const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'langparity-test-')); made.push(d); return d; };
 after(() => { for (const d of made) fs.rmSync(d, { recursive: true, force: true }); });
 const write = (dir, name, text) => { const f = path.join(dir, name); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, text); return f; };
 const checks = fs => fs.map(f => `${f.sev} ${f.check}`);
@@ -169,6 +169,6 @@ test('CLI: one line of JSON, exit codes, output only in the output folder, runs 
   assert.match(JSON.parse(bad.stdout).error, /source file/);
   const link = path.join(d, 'linked');
   fs.symlinkSync(path.dirname(SCRIPT), link, 'junction');
-  const viaLink = spawnSync(process.execPath, [path.join(link, 'driftcheck.mjs'), path.join(SAMPLES, 'po/de.po'), '--out', path.join(d, 'o2')], { encoding: 'utf8' });
+  const viaLink = spawnSync(process.execPath, [path.join(link, 'langparity.mjs'), path.join(SAMPLES, 'po/de.po'), '--out', path.join(d, 'o2')], { encoding: 'utf8' });
   assert.equal(JSON.parse(viaLink.stdout).counts.FAIL, 3, 'runs when reached through a junction');
 });

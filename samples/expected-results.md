@@ -1,6 +1,6 @@
 # Expected results for the samples
 
-Every problem below was planted on purpose. Pair numbers are the ones in Driftcheck's report.
+Every problem below was planted on purpose. Pair numbers are the ones in Langparity's report.
 
 ## app/en.json and app/fr.json (with glossary.txt, target language fr)
 

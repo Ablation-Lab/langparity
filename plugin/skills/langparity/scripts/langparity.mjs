@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Driftcheck: lines up a translation with its source and runs the mechanical checks.
+// Langparity: lines up a translation with its source and runs the mechanical checks.
 //
-//   node driftcheck.mjs <source file> [<target file>] [--glossary <file>] [--out <folder>]
+//   node langparity.mjs <source file> [<target file>] [--glossary <file>] [--out <folder>]
 //                       [--source-lang en] [--target-lang fr] [--format <format>]
 //
 // One file is enough for gettext .po and XLIFF, which hold source and target together.
@@ -309,7 +309,7 @@ export function run(o) {
   const count = sev => structure.filter(s => s.sev === sev).length + pairs.reduce((n, p) => n + p.findings.filter(f => f.sev === sev).length, 0);
   const counts = { FAIL: count('FAIL'), WARN: count('WARN'), NOTE: count('NOTE') };
   // The default output folder is new and private to this user (mkdtemp creates it with mode 0700).
-  const outDir = o.out ? path.resolve(o.out) : fs.mkdtempSync(path.join(os.tmpdir(), `driftcheck-${path.basename(srcFile).replace(/[^\w.-]+/g, '_').slice(0, 40)}-`));
+  const outDir = o.out ? path.resolve(o.out) : fs.mkdtempSync(path.join(os.tmpdir(), `langparity-${path.basename(srcFile).replace(/[^\w.-]+/g, '_').slice(0, 40)}-`));
   fs.mkdirSync(outDir, { recursive: true });
   const meta = { source: srcFile, target: tgtFile || null, format, sourceLang: o.sourceLang, targetLang: o.targetLang, glossaryTerms: glossary.length, pairs: pairs.length, counts };
   fs.writeFileSync(path.join(outDir, 'pairs.jsonl'), pairs.map(p => JSON.stringify(p)).join('\n') + (pairs.length ? '\n' : ''));
@@ -337,7 +337,7 @@ const findingLine = f => `${f.check}: ${f.detail}${f.values?.length ? `: ${f.val
 
 function report(meta, structure, pairs) {
   const L = [];
-  L.push('# Driftcheck report', '');
+  L.push('# Langparity report', '');
   L.push(`- **Source:** ${show(path.basename(meta.source))}${meta.sourceLang ? ` (${meta.sourceLang})` : ''}`);
   if (meta.target) L.push(`- **Translation:** ${show(path.basename(meta.target))}${meta.targetLang ? ` (${meta.targetLang})` : ''}`);
   L.push(`- **Format:** ${meta.format}; ${meta.pairs} pairs${meta.glossaryTerms ? `; glossary of ${meta.glossaryTerms} terms` : ''}`);

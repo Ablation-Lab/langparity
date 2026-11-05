@@ -1,15 +1,15 @@
-// Regression tests for the Driftcheck council's round-1 fix list (judge.md).
+// Regression tests for the Langparity council's round-1 fix list (judge.md).
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { run, parseArgs, alignBlocks } from '../plugin/skills/driftcheck/scripts/driftcheck.mjs';
-import { parseDocument, parseAndroid, parseXliff, parsePo, decodeEntities } from '../plugin/skills/driftcheck/scripts/lib/parsers.mjs';
-import { checkPair } from '../plugin/skills/driftcheck/scripts/lib/checks.mjs';
+import { run, parseArgs, alignBlocks } from '../plugin/skills/langparity/scripts/langparity.mjs';
+import { parseDocument, parseAndroid, parseXliff, parsePo, decodeEntities } from '../plugin/skills/langparity/scripts/lib/parsers.mjs';
+import { checkPair } from '../plugin/skills/langparity/scripts/lib/checks.mjs';
 
 const made = [];
-const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'driftcheck-r1-')); made.push(d); return d; };
+const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'langparity-r1-')); made.push(d); return d; };
 after(() => { for (const d of made) fs.rmSync(d, { recursive: true, force: true }); });
 const write = (dir, name, text) => { const f = path.join(dir, name); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, text); return f; };
 const go = (d, files, extra = []) => run({ ...parseArgs([...files, ...extra]), out: path.join(d, 'out-' + Math.random().toString(36).slice(2)) });
@@ -61,7 +61,7 @@ test('report injection: keys, ICU branch names, glossary terms and values with n
   const gl = write(d, 'gl.txt', 'dashboard = ![g](https://evil.example/gloss.png) <img src="https://evil.example/g2.png">\n');
   const rep = fs.readFileSync(go(d, [en, fr], ['--glossary', gl]).report, 'utf8');
   const headings = rep.split('\n').filter(l => /^#/.test(l));
-  assert.deepEqual(headings.filter(h => !/^(# Driftcheck report|## Structure|## Pair findings|## Notes|## Next|### Pair \d+: )/.test(h)), [], 'no forged headings');
+  assert.deepEqual(headings.filter(h => !/^(# Langparity report|## Structure|## Pair findings|## Notes|## Next|### Pair \d+: )/.test(h)), [], 'no forged headings');
   for (const line of rep.split('\n')) {
     const outside = line.replace(/(`+)[\s\S]*?\1/g, '');
     assert.ok(!/!\[|\]\(http|<img|\*\*pwn/.test(outside), `raw Markdown outside a code span: ${line}`);
@@ -133,7 +133,7 @@ test('UTF-16 BE is read; the default output folder is new each time', () => {
   made.push(a.outDir, b.outDir);
   assert.equal(a.pairs, 1);
   assert.notEqual(a.outDir, b.outDir);
-  assert.match(path.basename(a.outDir), /^driftcheck-en\.json-/);
+  assert.match(path.basename(a.outDir), /^langparity-en\.json-/);
 });
 
 test('one huge string gets only the structural checks, quickly', () => {

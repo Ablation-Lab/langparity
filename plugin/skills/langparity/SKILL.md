@@ -1,5 +1,5 @@
 ---
-name: driftcheck
+name: langparity
 description: Checks a translation against its source before it ships. A local script lines up the source and target strings or document sections and reports missing and extra parts, broken placeholders, ICU plurals, tags, links and formatting, changed numbers and untranslated text; then Claude reads every pair for meaning drift, omissions, tone and terminology and suggests a corrected translation for each problem it confirms. Works with JSON and ARB, gettext .po, .properties, Apple .strings, Android strings.xml, XLIFF, and Markdown or text documents. Use when the user asks to check, review, QA or proofread a translation or localization file against its source, compare two language versions of a document, or find what's missing or broken in a translated file. Not for translating new text, or for proofreading a document that has no source version.
 license: MIT
 compatibility: Claude Code with Node.js 18 or later. Reads only the files given; writes its report to a temporary folder.
@@ -7,7 +7,7 @@ compatibility: Claude Code with Node.js 18 or later. Reads only the files given;
 
 <!-- Maintainers: plugin/README.md describes this skill. When you change what it does, update the README too. -->
 
-# Driftcheck
+# Langparity
 
 Check a translation against its source: first the mechanical checks (the script), then a careful reading of every pair for meaning and tone (you). Report each confirmed problem with a corrected translation.
 
@@ -29,7 +29,7 @@ Note the source and target languages if you can tell them (from the file names, 
 Run it with the Bash tool (Claude Code asks first unless the user's permission settings already allow it). Put each path in single quotes; if a path contains a quotation mark of any kind (including curly ones, which PowerShell treats as quotes), ask the user to rename or copy the file instead.
 
 ```
-node "${CLAUDE_SKILL_DIR}/scripts/driftcheck.mjs" '<source file>' '<translation file>' --target-lang '<code>'
+node "${CLAUDE_SKILL_DIR}/scripts/langparity.mjs" '<source file>' '<translation file>' --target-lang '<code>'
 ```
 
 Options, only when needed:

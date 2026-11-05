@@ -1,18 +1,18 @@
-# Driftcheck
+# Langparity
 
-Driftcheck checks a translation against its source before you ship it. A local script lines up the source and the translation, string by string or section by section, and reports what's mechanically broken: missing and extra parts, renamed or dropped placeholders, broken ICU plurals, unclosed tags and formatting, changed links and numbers, and text left untranslated. Then Claude reads every pair for what a script can't see: meaning drift, dropped clauses, the wrong tone or form of address, and inconsistent terms. Each problem Claude confirms comes with a corrected translation.
+Langparity checks a translation against its source before you ship it. A local script lines up the source and the translation, string by string or section by section, and reports what's mechanically broken: missing and extra parts, renamed or dropped placeholders, broken ICU plurals, unclosed tags and formatting, changed links and numbers, and text left untranslated. Then Claude reads every pair for what a script can't see: meaning drift, dropped clauses, the wrong tone or form of address, and inconsistent terms. Each problem Claude confirms comes with a corrected translation.
 
-It adds one skill, `driftcheck` (in Claude Code: `/driftcheck:driftcheck`). It's an independent project, not made or endorsed by Anthropic.
+It adds one skill, `langparity` (in Claude Code: `/langparity:langparity`). It's an independent project, not made or endorsed by Anthropic.
 
 ## Install
 
 In Claude Code 2.1.275 or later:
 
 ```
-/plugin install driftcheck --marketplace Ablation-Lab/driftcheck
+/plugin install langparity --marketplace Ablation-Lab/langparity
 ```
 
-On older versions, add the marketplace first with `/plugin marketplace add Ablation-Lab/driftcheck`, then `/plugin install driftcheck@driftcheck`. To use the skill without the plugin, copy the `skills/driftcheck` folder into `~/.claude/skills/`. It needs Node.js 18 or later.
+On older versions, add the marketplace first with `/plugin marketplace add Ablation-Lab/langparity`, then `/plugin install langparity@langparity`. To use the skill without the plugin, copy the `skills/langparity` folder into `~/.claude/skills/`. It needs Node.js 18 or later.
 
 ## What it checks
 
@@ -45,7 +45,7 @@ Is anything broken in values-ja/strings.xml compared with values/strings.xml?
 
 ## Try it with the sample (for reviewers)
 
-There's no account to set up: Driftcheck runs locally on files. The repository's [samples/](https://github.com/Ablation-Lab/driftcheck/tree/main/samples) folder has three sets with problems planted on purpose, and [samples/expected-results.md](https://github.com/Ablation-Lab/driftcheck/blob/main/samples/expected-results.md) lists each one and which part (the script or Claude) should find it:
+There's no account to set up: Langparity runs locally on files. The repository's [samples/](https://github.com/Ablation-Lab/langparity/tree/main/samples) folder has three sets with problems planted on purpose, and [samples/expected-results.md](https://github.com/Ablation-Lab/langparity/blob/main/samples/expected-results.md) lists each one and which part (the script or Claude) should find it:
 
 - `app/en.json` and `app/fr.json`, an app's interface strings in English and French, with `glossary.txt`;
 - `docs/guide.en.md` and `docs/guide.de.md`, a short guide in English and German;
@@ -60,13 +60,13 @@ To try it:
 
 For the first, you should see 5 FAIL and 7 WARN from the script, plus Claude's meaning and tone issues: the trial that "starts" instead of "ends", "permanently" dropped from the delete warning, and "tu" where the rest uses "vous", each with a corrected French string. For the second, the missing API-key paragraph and the unclosed bold marker; for the third, `%s` changed to `%d` and "beendet" (ended) for "paused".
 
-**Developer note.** Seaready, our plugin submission checker, was built first. Driftcheck was then checked with it before submission: its local checks found no failures after one false alarm was recorded (the Markdown strikethrough pattern ~~ looked like a home-folder path; it is listed with its reason in .plugin-check-allow.json and shown as allowed in the report), and one warning because the repository had no GitHub remote yet. Its online name and overlap search found no plugin with the same name, many unrelated tools called driftcheck, and several similar tools, now described under How it compares. Driftcheck also went through a review council (three reviewers and a judge) and two rounds of fixes, each rechecked by a fresh reviewer; the issues left after that are listed under Limits. It's our own pre-check; the directory's validation and Anthropic's reviewers make the actual decision.
+**Developer note.** Seaready, our plugin submission checker, was built first. Langparity was then checked with it before submission: its local checks found no failures and one warning, because the repository had no GitHub remote yet (an earlier run raised a false alarm on the Markdown strikethrough marker, which it read as a home-folder path; that was fixed in Seaready). Its online name and overlap search found that the plugin's first name was crowded (see The name), and found several similar tools, now described under How it compares. Langparity also went through a review council (three reviewers and a judge) and two rounds of fixes, each rechecked by a fresh reviewer; the issues left after that are listed under Limits. It's our own pre-check; the directory's validation and Anthropic's reviewers make the actual decision.
 
 ## What it runs, reads and writes
 
-- **What it runs:** `node <skill folder>/scripts/driftcheck.mjs` with the file paths as arguments. Claude Code asks before each run unless your permission settings already allow it. It starts no other programs.
+- **What it runs:** `node <skill folder>/scripts/langparity.mjs` with the file paths as arguments. Claude Code asks before each run unless your permission settings already allow it. It starts no other programs.
 - **What it reads:** only the files it's given: the source, the translation and, if given, a glossary, up to 20 MB each. If you name only one file, Claude finds the matching one next to it and says which pair it's checking before it runs. The script reads them as text; it doesn't run anything in them, follow links or load external XML entities.
-- **What it writes:** `report.md`, `pairs.jsonl` (each pair with its findings, for Claude to read) and `summary.json`, in a new private folder under your system's temp folder (`driftcheck-<file name>-…`), or in a folder you choose, where it replaces those three files if they're there. Claude then adds its "Meaning and tone" section to that `report.md`. Your translation files aren't changed unless you ask Claude to apply the fixes, and then only the strings concerned.
+- **What it writes:** `report.md`, `pairs.jsonl` (each pair with its findings, for Claude to read) and `summary.json`, in a new private folder under your system's temp folder (`langparity-<file name>-…`), or in a folder you choose, where it replaces those three files if they're there. Claude then adds its "Meaning and tone" section to that `report.md`. Your translation files aren't changed unless you ask Claude to apply the fixes, and then only the strings concerned.
 - **Network:** none.
 
 ## Where it works
@@ -76,12 +76,12 @@ For the first, you should see 5 FAIL and 7 WARN from the script, plus Claude's m
 
 ## Privacy
 
-Driftcheck has no server, account or telemetry and sends nothing anywhere. The script writes its results to a new folder in your temp folder, and that folder keeps a full copy of the checked text (`pairs.jsonl`) and the report until you delete it; Windows doesn't empty the temp folder on its own unless Storage Sense is on. Claude gives you the folder's path and offers to delete it. Translation files often hold unreleased product text, and sometimes names or email addresses; Claude reads the strings to judge them, so they reach Anthropic the way anything in your conversation does. Don't check files you aren't allowed to share with Claude. Driftcheck keeps no history of its own between checks.
+Langparity has no server, account or telemetry and sends nothing anywhere. The script writes its results to a new folder in your temp folder, and that folder keeps a full copy of the checked text (`pairs.jsonl`) and the report until you delete it; Windows doesn't empty the temp folder on its own unless Storage Sense is on. Claude gives you the folder's path and offers to delete it. Translation files often hold unreleased product text, and sometimes names or email addresses; Claude reads the strings to judge them, so they reach Anthropic the way anything in your conversation does. Don't check files you aren't allowed to share with Claude. Langparity keeps no history of its own between checks.
 
 ## How it's built
 
 - **Markdown with YAML front matter.** The skill is `SKILL.md`: instructions for Claude in Markdown, with a short YAML block at the top (name, description, licence). They say how to run the script, how to read the pairs, what counts as drift or a tone problem, and how to write each fix.
-- **JavaScript (Node.js ES modules).** `scripts/driftcheck.mjs` and the two files in `scripts/lib/` are plain JavaScript that Node runs directly, with no packages. `parsers.mjs` reads each file format; `checks.mjs` holds the checks.
+- **JavaScript (Node.js ES modules).** `scripts/langparity.mjs` and the two files in `scripts/lib/` are plain JavaScript that Node runs directly, with no packages. `parsers.mjs` reads each file format; `checks.mjs` holds the checks.
 - **JSON Lines for the pairs.** `pairs.jsonl` has one pair per line (JSON, a small text format of names and values), so Claude can read a long file in parts.
 - **Markdown for the report.** Text from your files is shown in the report only inside code spans, on one line, with invisible characters written as visible codes. The report's own wording never includes text from the files, so a translation can't add headings, links or instructions to it.
 
@@ -94,12 +94,15 @@ Driftcheck has no server, account or telemetry and sends nothing anywhere. The s
 
 ## How it compares
 
-- **Translation-management QA checks** (Weblate, Tolgee, Localizely, Phrase, SimpleLocalize's file linter) check placeholders, ICU syntax, tags and plural categories inside their platforms. Driftcheck runs locally on your files with no account, adds Markdown and text documents, and has Claude read every pair for meaning and tone, with a corrected string for each problem it confirms.
-- **l10n-catalogs** (claudskills.com) is guidance for Claude on checking .po, XLIFF, ARB, strings.xml and ICU files. Driftcheck adds a script that does the exact checks first, so Claude's reading starts from a list of mechanical findings and lined-up pairs.
-- **Key-sync tools** such as i18next-locales-sync and laravel-translations-checker find missing or extra keys. Driftcheck also checks what's inside each string, and its meaning.
-- **Translation skills** (for example Plane's and ShapeShift's translate skills, translating-products-skill, translate-epub) write new translations. Driftcheck reviews a translation you already have.
-- **intl-review** (ethereum.org) and **i18n-sync** review one project's translations against its own glossary or languages. Driftcheck works on any project and format, with an optional glossary.
-- **The name:** many tools called driftcheck or drift-check detect configuration, documentation or code drift (for example kinti/driftcheck, deichrenner/driftcheck, and the claude-drift plugin's drift-check command). They aren't related; Driftcheck is about translations drifting from their source.
+- **Translation-management QA checks** (Weblate, Tolgee, Localizely, Phrase, SimpleLocalize's file linter) check placeholders, ICU syntax, tags and plural categories inside their platforms. Langparity runs locally on your files with no account, adds Markdown and text documents, and has Claude read every pair for meaning and tone, with a corrected string for each problem it confirms.
+- **l10n-catalogs** (claudskills.com) is guidance for Claude on checking .po, XLIFF, ARB, strings.xml and ICU files. Langparity adds a script that does the exact checks first, so Claude's reading starts from a list of mechanical findings and lined-up pairs.
+- **Key-sync tools** such as i18next-locales-sync and laravel-translations-checker find missing or extra keys. Langparity also checks what's inside each string, and its meaning.
+- **Translation skills** (for example Plane's and ShapeShift's translate skills, translating-products-skill, translate-epub) write new translations. Langparity reviews a translation you already have.
+- **intl-review** (ethereum.org) and **i18n-sync** review one project's translations against its own glossary or languages. Langparity works on any project and format, with an optional glossary.
+
+## The name
+
+Langparity was first called Driftcheck. It was renamed before submission because many tools already use that name or "drift-check" for configuration, documentation and code drift, including an updater for agent skills and plugins and a Claude Code plugin command, so the old name was easy to confuse with them. A search of GitHub, the plugin directory, community skill directories, npm, PyPI and the web found no plugin, skill, package or product called Langparity; the nearest name is LangParty, a language-exchange community.
 
 ## Limits
 
@@ -129,7 +132,7 @@ Driftcheck has no server, account or telemetry and sends nothing anywhere. The s
 
 ## Support
 
-Report problems at https://github.com/Ablation-Lab/driftcheck/issues.
+Report problems at https://github.com/Ablation-Lab/langparity/issues.
 
 ## Licence
 

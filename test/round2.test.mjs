@@ -1,15 +1,15 @@
-// Regression tests for Driftcheck recheck 1 (council round 2).
+// Regression tests for Langparity recheck 1 (council round 2).
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { run, parseArgs, alignBlocks } from '../plugin/skills/driftcheck/scripts/driftcheck.mjs';
-import { parseDocument } from '../plugin/skills/driftcheck/scripts/lib/parsers.mjs';
-import { checkPair } from '../plugin/skills/driftcheck/scripts/lib/checks.mjs';
+import { run, parseArgs, alignBlocks } from '../plugin/skills/langparity/scripts/langparity.mjs';
+import { parseDocument } from '../plugin/skills/langparity/scripts/lib/parsers.mjs';
+import { checkPair } from '../plugin/skills/langparity/scripts/lib/checks.mjs';
 
 const made = [];
-const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'driftcheck-r2-')); made.push(d); return d; };
+const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'langparity-r2-')); made.push(d); return d; };
 after(() => { for (const d of made) fs.rmSync(d, { recursive: true, force: true }); });
 const write = (dir, name, text) => { const f = path.join(dir, name); fs.writeFileSync(f, text); return f; };
 const go = (d, files, extra = []) => run({ ...parseArgs([...files, ...extra]), out: path.join(d, 'o' + Math.random().toString(36).slice(2)) });
