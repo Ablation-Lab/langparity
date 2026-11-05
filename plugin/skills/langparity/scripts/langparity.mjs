@@ -200,10 +200,10 @@ export function run(o) {
   const [srcFile, tgtFile] = o.files.map(f => path.resolve(f));
   const srcText = readText(srcFile);
   const format = o.format || detectFormat(srcFile, srcText);
-  if (!format) throw new Error(`can't tell the format of ${path.basename(srcFile)}; pass --format (${FORMATS.join(', ')})`);
+  if (!format) throw new Error(`can't tell the format of ${path.basename(srcFile)}; add --format (${FORMATS.join(', ')})`);
   const tgtText = tgtFile ? readText(tgtFile) : null;
   if (!tgtFile && !PAIRED_FORMATS.includes(format)) throw new Error(`${format} files hold one language each; give the translation file too`);
-  if (tgtFile && format !== (o.format || detectFormat(tgtFile, tgtText))) throw new Error(`the two files look like different formats (${format} and ${detectFormat(tgtFile, tgtText) ?? 'unknown'}); pass --format if they're the same`);
+  if (tgtFile && format !== (o.format || detectFormat(tgtFile, tgtText))) throw new Error(`the two files look like different formats (${format} and ${detectFormat(tgtFile, tgtText) ?? 'unknown'}); add --format if they're the same`);
   const glossary = o.glossary ? parseGlossary(readText(path.resolve(o.glossary))) : [];
   const cjk = /^(zh|ja|ko)/.test(o.targetLang || '') || /^(zh|ja|ko)/.test(o.sourceLang || '');
   const sameLanguage = o.sourceLang && o.targetLang && o.sourceLang.split(/[-_]/)[0] === o.targetLang.split(/[-_]/)[0];
