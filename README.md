@@ -60,7 +60,7 @@ To try it:
 
 For the first, you should see 5 FAIL and 7 WARN from the script, plus Claude's meaning and tone issues: the trial that "starts" instead of "ends", "permanently" dropped from the delete warning, and "tu" where the rest uses "vous", each with a corrected French string. For the second, the missing API-key paragraph and the unclosed bold marker; for the third, `%s` changed to `%d` and "beendet" (ended) for "paused".
 
-**Developer note.** Seaready, our plugin submission checker, was built first. Langparity was then checked with it before submission: its local checks found no failures and one warning, because the repository had no GitHub remote yet (an earlier run raised a false alarm on the Markdown strikethrough marker, which it read as a home-folder path; that was fixed in Seaready). Its online name and overlap search found that the plugin's first name was crowded (see The name), and found several similar tools, now described under How it compares. Langparity also went through a review council (three reviewers and a judge) and two rounds of fixes, each rechecked by a fresh reviewer; the issues left after that are listed under Limits. It's our own pre-check; the directory's validation and Anthropic's reviewers make the actual decision.
+**Developer note.** Seaready, our plugin submission checker, was built first. Langparity was then checked with it before submission: its local checks found no failures and one warning, because the repository wasn't on GitHub yet (an earlier run raised a false alarm on the Markdown strikethrough marker, which it read as a home-folder path; that was fixed in Seaready). Its online name and overlap search found that the plugin's first name was crowded (see The name), and found several similar tools, now described under How it compares. Langparity also went through a review council (three reviewers and a judge) and two rounds of fixes, each rechecked by a fresh reviewer; the issues left after that are listed under Limits. It's our own pre-check; the directory's validation and Anthropic's reviewers make the actual decision.
 
 ## What it runs, reads and writes
 
@@ -87,7 +87,7 @@ Langparity has no server, account or telemetry and sends nothing anywhere. The s
 
 ## Design decisions
 
-- **Two passes, each doing what it's good at.** A script is exact about placeholders, tags and numbers and never gets tired; Claude understands meaning and tone. The script's findings also tell Claude where to look hardest.
+- **Two steps, each doing what it's good at.** A script is exact about placeholders, tags and numbers and never gets tired; Claude understands meaning and tone. The script's findings also tell Claude where to look hardest.
 - **Every confirmed problem gets a fix.** A list of problems without corrections leaves the hard part to you, so each FAIL and WARN Claude confirms comes with a suggested translation.
 - **Read only.** It reports and suggests; it doesn't rewrite your files unless you ask.
 - **Languages differ, so some differences are only notes.** Plural categories, end punctuation and spacing vary by language and are flagged as notes, not errors.
@@ -126,7 +126,7 @@ Langparity was first called Driftcheck. It was renamed before submission because
 ## Troubleshooting
 
 - **"give the translation file too":** that format holds one language per file; name both files.
-- **"the two files look like different formats":** they have different extensions; pass `--format` if they really are the same format.
+- **"the two files look like different formats":** they have different extensions; add `--format` if they really are the same format.
 - **"isn't UTF-8 or UTF-16 text":** save the file as UTF-8 in your editor and try again.
 - **"node" isn't found:** install Node.js 18 or later.
 
