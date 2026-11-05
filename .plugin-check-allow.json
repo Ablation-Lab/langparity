@@ -1,0 +1,3 @@
+[
+  { "id": "DISCLOSE", "file": "plugin/skills/driftcheck/scripts/lib/checks.mjs", "reason": "Line 169 counts Markdown strikethrough markers (~~) in translated text. checks.mjs only compares strings: it reads no files, starts nothing and makes no requests, so the ~ isn't a home-folder path." }
+]
